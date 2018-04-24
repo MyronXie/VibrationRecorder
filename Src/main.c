@@ -70,9 +70,9 @@ FIL fil;                  // file objects
 char fileName[20]="default.txt";
 uint16_t fileNo=0;
 uint32_t byteswritten;                /* File write counts */
-uint32_t fileSize=0;
+
 char wtext[100] = "FatFs on STM32F765."; /* File write buffer */
-uint32_t seqStamp=1;
+uint32_t seqStamp=0;
 uint32_t tmStamp=0;
 uint8_t errCnt=0;
 uint8_t exitCnt=0;
@@ -177,12 +177,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		if(errCnt>=5)	
-		{
-			printf("Fatal Error! Reset system...");
-			NVIC_SystemReset();
-		}
-
 		/*##-1- Register the file system object to the FatFs module ##############*/
         printf("\r\n Mount: ");
 		retSD = f_mount(&fs, "0:", 1);
@@ -218,11 +212,12 @@ int main(void)
         }
 
 		sprintf(wtext,"SeqSmp,Acc_1x,Acc_1y,Acc_1z,Acc_2x,Acc_2y,Acc_2z,Acc_3x,Acc_3y,Acc_3z,Acc_4x,Acc_4y,Acc_4z");
-		if(!exitCnt) retSD = f_write(&fil, wtext, sizeof(wtext), (void *)&byteswritten);
-		printf("%s,%d",wtext,retSD);
+		retSD = f_write(&fil, wtext, sizeof(wtext), (void *)&byteswritten);
 		
 		while(1)
-		{           
+		{
+			seqStamp++;
+            
             for(int i=0;i<4;i++)
             {
                 if(sensorList[i]->enabled)
@@ -230,12 +225,11 @@ int main(void)
                     status = SensorGetData(sensorList[i]);
                     if(status)
                     {
-                        sensorList[i]->err++;
-                        if(sensorList[i]->err==10)
+                        if(++sensorList[i]->err>=10)
                         {
                             sensorList[i]->enabled = 0;
                             sensorList[i]->rawData[0]=0; sensorList[i]->rawData[1]=0; sensorList[i]->rawData[2]=0;
-                            printf("\r\n %d: %s offboard!",seqStamp,sensorList[i]->name);
+                            printf("\r\n %6d: %s offboard!",seqStamp,sensorList[i]->name);
                         }
                     }
                     else sensorList[i]->err=0;
@@ -249,7 +243,7 @@ int main(void)
                         sensorList[2]->rawData[0],sensorList[2]->rawData[1],sensorList[2]->rawData[2],
                         sensorList[3]->rawData[0],sensorList[3]->rawData[1],sensorList[3]->rawData[2]);
             
-            retSD = f_write(&fil, wtext, sizeof(wtext), (void *)&byteswritten);                
+            retSD = f_write(&fil, wtext, sizeof(wtext), (void *)&byteswritten);          
     
             if(HAL_GetTick()-tmStamp>=1000)
             {
@@ -257,22 +251,25 @@ int main(void)
                 printf("%s",wtext);
             }
             				
-			if(seqStamp%500==0)
+			if(seqStamp%256==0)
 			{
                 HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_12);	
-
+			}
+            
+            if(seqStamp%512==0)
+            {
 				if(retSD)
 				{
-					printf("Wr:%d",retSD);
+					printf(",Wr:%d",retSD);
 					errCnt++;
 				}
                 else
                 {
                     errCnt=0;
                 }
-			}
+            }
             
-            if(seqStamp%1000==0)
+            if(seqStamp%1024==0)
             {
                 for(int i=0;i<4;i++)
                 {
@@ -283,51 +280,36 @@ int main(void)
                         if(!status)
                         {
                             sensorList[i]->enabled=1;
-                            printf("\r\n %d: %s onboard!",seqStamp,sensorList[i]->name);
+                            printf("\r\n %6d: %s onboard!",seqStamp,sensorList[i]->name);
                         }
                         else        sensorList[i]->enabled=0;
                     }
                 }
             }
 	
-			if(seqStamp%2000==0)	
+			if(seqStamp%2048==0)	
 			{
-			
+                printf(",Sync:");
 				retSD = f_sync(&fil);
-				if(retSD)
-				{
-					errCnt++;
-					printf(" Sync fail. Cnt:%d",errCnt);
-				}
-				else
-				{
-					errCnt=0;
-					printf(" Sync.");
-				}
-				
-				if(errCnt<5)
-				{
-					//HAL_IWDG_Refresh(&hiwdg);
-				}
-                else break;
+				if(retSD)   errCnt++;
+                else        errCnt=0;
+                printf("%d",errCnt);
 			}
-			//HAL_Delay(1);
 			
-			seqStamp++;
+            if(errCnt>5)    break;
+
 		}
 		
 		/*##-4- Close the open text files ################################*/
 		retSD = f_close(&fil);
 		if(retSD)   printf(" Close error: %d\r\n",retSD);
 		else        printf(" Close success!\r\n");
-		//fileSize=fil.fptr;
-		
-		printf(" filesize=%d\r\n",fileSize);
-		
-		
-		//HAL_IWDG_Refresh(&hiwdg);
-		exitCnt++;
-		
+        
+        if(errCnt>=5)	
+		{
+			printf("Fatal Error! Reset system...");
+			NVIC_SystemReset();
+		}
 
   /* USER CODE END WHILE */
 

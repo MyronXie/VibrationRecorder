@@ -332,7 +332,7 @@ uint8_t H3LIS100DL_RawData(SensorType* sensor)
 {
 	uint8_t msg,status=0;
 
-    status+=I2C_ReadByte(sensor->addr, 0x27, &msg);
+//    status+=I2C_ReadByte(sensor->addr, 0x27, &msg);
     //printf("\r\n$%d",msg);
     //printf("\r\n$%d,%d,%d",sensor->rawData[0],sensor->rawData[1],sensor->rawData[2]);
     
