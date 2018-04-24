@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : RTC.c
+  * File Name          : TIM.c
   * Description        : This file provides code for the configuration
-  *                      of the RTC instances.
+  *                      of the TIM instances.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -48,91 +48,82 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "rtc.h"
+#include "tim.h"
 
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
 
-RTC_HandleTypeDef hrtc;
-RTC_TimeTypeDef sTime;
-RTC_DateTypeDef sDate;
+TIM_HandleTypeDef htim2;
 
-/* RTC init function */
-void MX_RTC_Init(void)
+/* TIM2 init function */
+void MX_TIM2_Init(void)
 {
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
 
-    /**Initialize RTC Only 
-    */
-  hrtc.Instance = RTC;
-  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-  hrtc.Init.AsynchPrediv = 127;
-  hrtc.Init.SynchPrediv = 255;
-  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
-  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
-  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-  if (HAL_RTC_Init(&hrtc) != HAL_OK)
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 125-1;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 1000-1;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Initialize RTC and set the Time and Date 
-    */
-  if(HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR0) != 0x1016){
-   
-      sDate.Year = 0x18;
-      sDate.Month = 0x04;
-      sDate.Date = 0x24;
-      
-      sTime.Hours = 0x13;
-      sTime.Minutes = 0x23;
-      sTime.Seconds = 0x18;
-
-      
-  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
-  }
-
-    HAL_RTCEx_BKUPWrite(&hrtc,RTC_BKP_DR0,0x1016);
   }
 
 }
 
-void HAL_RTC_MspInit(RTC_HandleTypeDef* rtcHandle)
+void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
 {
 
-  if(rtcHandle->Instance==RTC)
+  if(tim_baseHandle->Instance==TIM2)
   {
-  /* USER CODE BEGIN RTC_MspInit 0 */
+  /* USER CODE BEGIN TIM2_MspInit 0 */
 
-  /* USER CODE END RTC_MspInit 0 */
-    /* RTC clock enable */
-    __HAL_RCC_RTC_ENABLE();
-  /* USER CODE BEGIN RTC_MspInit 1 */
+  /* USER CODE END TIM2_MspInit 0 */
+    /* TIM2 clock enable */
+    __HAL_RCC_TIM2_CLK_ENABLE();
 
-  /* USER CODE END RTC_MspInit 1 */
+    /* TIM2 interrupt Init */
+    HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(TIM2_IRQn);
+  /* USER CODE BEGIN TIM2_MspInit 1 */
+
+  /* USER CODE END TIM2_MspInit 1 */
   }
 }
 
-void HAL_RTC_MspDeInit(RTC_HandleTypeDef* rtcHandle)
+void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
 {
 
-  if(rtcHandle->Instance==RTC)
+  if(tim_baseHandle->Instance==TIM2)
   {
-  /* USER CODE BEGIN RTC_MspDeInit 0 */
+  /* USER CODE BEGIN TIM2_MspDeInit 0 */
 
-  /* USER CODE END RTC_MspDeInit 0 */
+  /* USER CODE END TIM2_MspDeInit 0 */
     /* Peripheral clock disable */
-    __HAL_RCC_RTC_DISABLE();
-  /* USER CODE BEGIN RTC_MspDeInit 1 */
+    __HAL_RCC_TIM2_CLK_DISABLE();
 
-  /* USER CODE END RTC_MspDeInit 1 */
+    /* TIM2 interrupt Deinit */
+    HAL_NVIC_DisableIRQ(TIM2_IRQn);
+  /* USER CODE BEGIN TIM2_MspDeInit 1 */
+
+  /* USER CODE END TIM2_MspDeInit 1 */
   }
 } 
 

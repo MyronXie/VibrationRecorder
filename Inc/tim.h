@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : RTC.c
+  * File Name          : TIM.h
   * Description        : This file provides code for the configuration
-  *                      of the RTC instances.
+  *                      of the TIM instances.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -46,99 +46,39 @@
   *
   ******************************************************************************
   */
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __tim_H
+#define __tim_H
+#ifdef __cplusplus
+ extern "C" {
+#endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "rtc.h"
+#include "stm32f7xx_hal.h"
+#include "main.h"
 
-/* USER CODE BEGIN 0 */
+/* USER CODE BEGIN Includes */
 
-/* USER CODE END 0 */
+/* USER CODE END Includes */
 
-RTC_HandleTypeDef hrtc;
-RTC_TimeTypeDef sTime;
-RTC_DateTypeDef sDate;
+extern TIM_HandleTypeDef htim2;
 
-/* RTC init function */
-void MX_RTC_Init(void)
-{
+/* USER CODE BEGIN Private defines */
 
-    /**Initialize RTC Only 
-    */
-  hrtc.Instance = RTC;
-  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-  hrtc.Init.AsynchPrediv = 127;
-  hrtc.Init.SynchPrediv = 255;
-  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
-  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
-  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-  if (HAL_RTC_Init(&hrtc) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
+/* USER CODE END Private defines */
 
-    /**Initialize RTC and set the Time and Date 
-    */
-  if(HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR0) != 0x1016){
-   
-      sDate.Year = 0x18;
-      sDate.Month = 0x04;
-      sDate.Date = 0x24;
-      
-      sTime.Hours = 0x13;
-      sTime.Minutes = 0x23;
-      sTime.Seconds = 0x18;
+extern void _Error_Handler(char *, int);
 
-      
-  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
+void MX_TIM2_Init(void);
 
-  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
+/* USER CODE BEGIN Prototypes */
 
-    HAL_RTCEx_BKUPWrite(&hrtc,RTC_BKP_DR0,0x1016);
-  }
+/* USER CODE END Prototypes */
 
+#ifdef __cplusplus
 }
-
-void HAL_RTC_MspInit(RTC_HandleTypeDef* rtcHandle)
-{
-
-  if(rtcHandle->Instance==RTC)
-  {
-  /* USER CODE BEGIN RTC_MspInit 0 */
-
-  /* USER CODE END RTC_MspInit 0 */
-    /* RTC clock enable */
-    __HAL_RCC_RTC_ENABLE();
-  /* USER CODE BEGIN RTC_MspInit 1 */
-
-  /* USER CODE END RTC_MspInit 1 */
-  }
-}
-
-void HAL_RTC_MspDeInit(RTC_HandleTypeDef* rtcHandle)
-{
-
-  if(rtcHandle->Instance==RTC)
-  {
-  /* USER CODE BEGIN RTC_MspDeInit 0 */
-
-  /* USER CODE END RTC_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_RTC_DISABLE();
-  /* USER CODE BEGIN RTC_MspDeInit 1 */
-
-  /* USER CODE END RTC_MspDeInit 1 */
-  }
-} 
-
-/* USER CODE BEGIN 1 */
-
-/* USER CODE END 1 */
+#endif
+#endif /*__ tim_H */
 
 /**
   * @}

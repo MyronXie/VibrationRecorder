@@ -54,6 +54,7 @@
 #include "i2c.h"
 #include "rtc.h"
 #include "sdmmc.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -73,7 +74,7 @@ uint32_t byteswritten;                /* File write counts */
 
 char wtext[100] = "FatFs on STM32F765."; /* File write buffer */
 uint32_t seqStamp=0;
-uint32_t tmStamp=0;
+uint32_t tmStamp=0,tmStampLst=0;
 uint8_t errCnt=0;
 uint8_t exitCnt=0;
 
@@ -144,9 +145,10 @@ int main(void)
   MX_USART2_UART_Init();
   MX_FATFS_Init();
   MX_RTC_Init();
+  MX_TIM2_Init();
 
   /* USER CODE BEGIN 2 */
-  
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_12, GPIO_PIN_SET);
     printf("\r\n ****** Vibration Logger (bulid 180424) ******\r\n");
   
     HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
@@ -211,12 +213,14 @@ int main(void)
             }
         }
 
-		sprintf(wtext,"SeqSmp,Acc_1x,Acc_1y,Acc_1z,Acc_2x,Acc_2y,Acc_2z,Acc_3x,Acc_3y,Acc_3z,Acc_4x,Acc_4y,Acc_4z");
+		sprintf(wtext,"SeqSmp, TmSmp,Acc_1x,Acc_1y,Acc_1z,Acc_2x,Acc_2y,Acc_2z,Acc_3x,Acc_3y,Acc_3z,Acc_4x,Acc_4y,Acc_4z");
 		retSD = f_write(&fil, wtext, sizeof(wtext), (void *)&byteswritten);
+        printf("\r\n%s",wtext);
 		
 		while(1)
 		{
 			seqStamp++;
+            tmStamp = HAL_GetTick();
             
             for(int i=0;i<4;i++)
             {
@@ -229,7 +233,7 @@ int main(void)
                         {
                             sensorList[i]->enabled = 0;
                             sensorList[i]->rawData[0]=0; sensorList[i]->rawData[1]=0; sensorList[i]->rawData[2]=0;
-                            printf("\r\n %6d: %s offboard!",seqStamp,sensorList[i]->name);
+                            printf("\r\n%6d: %s offboard!",seqStamp,sensorList[i]->name);
                         }
                     }
                     else sensorList[i]->err=0;
@@ -237,7 +241,7 @@ int main(void)
 
             }
             
-            sprintf(wtext,"\r\n%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d",seqStamp,
+            sprintf(wtext,"\r\n%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d,%6d",seqStamp%1000000,tmStamp%1000000,
                         sensorList[0]->rawData[0],sensorList[0]->rawData[1],sensorList[0]->rawData[2],
                         sensorList[1]->rawData[0],sensorList[1]->rawData[1],sensorList[1]->rawData[2],
                         sensorList[2]->rawData[0],sensorList[2]->rawData[1],sensorList[2]->rawData[2],
@@ -245,9 +249,9 @@ int main(void)
             
             retSD = f_write(&fil, wtext, sizeof(wtext), (void *)&byteswritten);          
     
-            if(HAL_GetTick()-tmStamp>=1000)
+            if(tmStamp-tmStampLst>=1000)
             {
-                tmStamp = HAL_GetTick();
+                tmStampLst = tmStamp;
                 printf("%s",wtext);
             }
             				
@@ -256,20 +260,7 @@ int main(void)
                 HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_12);	
 			}
             
-            if(seqStamp%512==0)
-            {
-				if(retSD)
-				{
-					printf(",Wr:%d",retSD);
-					errCnt++;
-				}
-                else
-                {
-                    errCnt=0;
-                }
-            }
-            
-            if(seqStamp%1024==0)
+            if(seqStamp%256==0)
             {
                 for(int i=0;i<4;i++)
                 {
@@ -280,20 +271,23 @@ int main(void)
                         if(!status)
                         {
                             sensorList[i]->enabled=1;
-                            printf("\r\n %6d: %s onboard!",seqStamp,sensorList[i]->name);
+                            printf("\r\n%6d: %s onboard!",seqStamp,sensorList[i]->name);
                         }
                         else        sensorList[i]->enabled=0;
                     }
                 }
             }
 	
-			if(seqStamp%2048==0)	
+			if(seqStamp%256==0)	
 			{
-                printf(",Sync:");
 				retSD = f_sync(&fil);
-				if(retSD)   errCnt++;
+				if(retSD)
+                {
+                    errCnt++;
+                    printf(",Sync:%d",errCnt);
+                }
                 else        errCnt=0;
-                printf("%d",errCnt);
+                
 			}
 			
             if(errCnt>5)    break;
@@ -399,6 +393,14 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if(htim->Instance == TIM2)      // TIM2: System Management (1Hz)
+    {
+    }
+}
+
 uint8_t SensorInit(SensorType* sensor)
 {
     uint8_t status = 0;

@@ -337,7 +337,7 @@
               <MiscControls>--C99</MiscControls>
               <Define>USE_HAL_DRIVER,STM32F765xx</Define>
               <Undefine></Undefine>
-              <IncludePath>../Inc;      ../Drivers/STM32F7xx_HAL_Driver/Inc;      ../Drivers/STM32F7xx_HAL_Driver/Inc/Legacy;      ../Drivers/CMSIS/Device/ST/STM32F7xx/Include;      ../Middlewares/Third_Party/FatFs/src;      ../Drivers/CMSIS/Include</IncludePath>
+              <IncludePath>../Inc;        ../Drivers/STM32F7xx_HAL_Driver/Inc;        ../Drivers/STM32F7xx_HAL_Driver/Inc/Legacy;        ../Drivers/CMSIS/Device/ST/STM32F7xx/Include;        ../Middlewares/Third_Party/FatFs/src;        ../Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -595,6 +595,11 @@
               <FileName>rtc.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Src/rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>tim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Src/tim.c</FilePath>
             </File>
           </Files>
         </Group>
